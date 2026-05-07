@@ -67,7 +67,7 @@ agrovision/
     │   ├── val.csv
     │   └── test.csv
     └── checkpoints/
-        └── best.pth             ← Trained model weights (saved here)              ←
+        └── best.pth             ← Trained model weights (saved here)              
 ```
 ### Part 1 - Training on Google Colab
 
