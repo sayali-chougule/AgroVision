@@ -130,12 +130,43 @@ Colab free tier disconnects after ~90 min of inactivity. Just re-run — complet
 | 6 | `stage_06_evaluate.py` | Classification report on unseen test set | `evaluation_report.txt` |
 
 
-#### Step 9 — Download best.pth after training
-Once training is complete, download the trained model to your local machine:
+
+### Part 2 — Deployment on Local
+After training on Colab, run the web app locally in VS Code. localhost:8000 works directly on your machine.
+
+#### Step 1 — Get the project folder to your local machine
+
+Google Drive Desktop App
+
+1. Install Google Drive for Desktop
+2. Sign in with your Google account
+3. Drive appears as G:\My Drive\ in Windows File Explorer
+4. Copy agrovision/ from G:\My Drive\agrovision to your local Projects folder:
 
 ```bash
-from google.colab import files
-files.download('/content/drive/MyDrive/AgroVision/output/checkpoints/best.pth')
+C:\path\to\Projects\agrovision
 ```
 
-It saves to your browser's Downloads folder. Need this for local deployment.
+#### Step 2 — Open project in VS Code/any local IDE
+
+```bash
+cd C:\path\to\Projects\agrovision
+code .
+```
+
+#### Step 3 — Create virtual environment
+Open the VS Code terminal and run:
+
+```bash
+python -m venv venv
+```
+
+#### Step 4 — Activate virtual environment
+
+**Windows:**
+
+```bash
+venv\Scripts\activate
+```
+
+
