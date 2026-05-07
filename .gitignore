@@ -6,7 +6,7 @@ output/manifest.csv
 output/manifest_clean.csv
 output/manifest_processed.csv
 output/evaluation_report.txt
-output/class_map.jason
+output/class_map.json
 
 # Keep the folder structure but not the contents
 !output/.gitkeep
