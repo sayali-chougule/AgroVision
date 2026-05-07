@@ -94,7 +94,7 @@ drive.mount('/content/drive')
 !pip install timm albumentations imagehash tqdm pandas opencv-python-headless -q
 ```
 
-#### Step 5 — Upload project to Colab
+#### Step 5 - Upload project to Colab
 Either upload manually via the Files panel (left sidebar in Colab), or clone from GitHub:
 
 ``` bash 
@@ -102,13 +102,13 @@ Either upload manually via the Files panel (left sidebar in Colab), or clone fro
 %cd agrovision
 ```
 
-#### Step 6 — Install deployment dependencies 
+#### Step 6 - Install deployment dependencies 
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Step 7 — Run the full pipeline 
+#### Step 7 - Run the full pipeline 
 
 ```bash
 !python pipeline.py
@@ -116,7 +116,7 @@ pip install -r requirements.txt
 This runs all 6 stages in order automatically. All outputs are saved back to Google Drive.
 
 #### Step 8 - If Colab disconnects mid-training
-Colab free tier disconnects after ~90 min of inactivity. Just re-run — completed stages are automatically skipped thanks to checkpoint flags in logs/:
+Colab free tier disconnects after ~90 min of inactivity. Just re-run completed stages are automatically skipped thanks to checkpoint flags in logs/:
 
 ```bash
 # Resume from a specific stage (skips everything before it)
@@ -183,10 +183,22 @@ source venv/bin/activate
 
 You should see (venv) appear in your terminal prompt.
 
-#### Step 5 — Install deployment dependencies
+#### Step 5 - Install deployment dependencies
 
 ```bash
 pip install -r requirements_deploy.txt
 ```
 
+requirements_deploy.txt includes: fastapi, uvicorn, python-multipart, torch, timm, albumentations, opencv-python, pillow, numpy, pyyaml
 
+
+#### Step 8 - Launch the app
+
+```bash
+python run.py
+```
+
+The browser opens automatically at http://localhost:8000
+
+
+**Check logs/pipeline.log for detailed output from every pipeline stage if anything goes wrong during training.**
