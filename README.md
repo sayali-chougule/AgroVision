@@ -101,3 +101,41 @@ Either upload manually via the Files panel (left sidebar in Colab), or clone fro
 !git clone https://github.com/yourname/agrovision.git
 %cd agrovision
 ```
+
+#### Step 6 — Run the full pipeline 
+
+```bash
+!python pipeline.py
+```
+This runs all 6 stages in order automatically. All outputs are saved back to Google Drive.
+
+#### Step 7 — If Colab disconnects mid-training
+Colab free tier disconnects after ~90 min of inactivity. Just re-run — completed stages are automatically skipped thanks to checkpoint flags in logs/:
+
+```bash
+# Resume from a specific stage (skips everything before it)
+!python pipeline.py train
+!python pipeline.py split
+```
+
+#### Step 8 — Pipeline stages reference
+
+| Stage | File | What it does | Output |
+|-------|------|-------------|--------|
+| 1 | `stage_01_ingest.py` | Scans Drive dataset folder | `manifest.csv` |
+| 2 | `stage_02_validate.py` | Removes corrupt / duplicate / low-res images | `manifest_clean.csv` |
+| 3 | `stage_03_preprocess.py` | Resizes all images to 224×224 RGB | `output/processed/` |
+| 4 | `stage_04_split.py` | Encodes labels, 70/15/15 stratified split | `splits/train/val/test.csv` |
+| 5 | `stage_05_train.py` | Trains EfficientNet-B3, saves best model | `checkpoints/best.pth` |
+| 6 | `stage_06_evaluate.py` | Classification report on unseen test set | `evaluation_report.txt` |
+
+
+#### Step 9 — Download best.pth after training
+Once training is complete, download the trained model to your local machine:
+
+```bash
+from google.colab import files
+files.download('/content/drive/MyDrive/AgroVision/output/checkpoints/best.pth')
+```
+
+It saves to your browser's Downloads folder. Need this for local deployment.
