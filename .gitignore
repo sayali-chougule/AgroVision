@@ -1,0 +1,35 @@
+# ── Output folder — never commit generated files 
+output/processed/
+output/splits/
+output/checkpoints/
+output/manifest.csv
+output/manifest_clean.csv
+output/manifest_processed.csv
+output/evaluation_report.txt
+
+# Keep the folder structure but not the contents
+!output/.gitkeep
+!output/processed/.gitkeep
+!output/splits/.gitkeep
+!output/checkpoints/.gitkeep
+
+# ── Pipeline checkpoint flags 
+logs/.done_*
+logs/pipeline.log
+
+# Keep logs folder
+!logs/.gitkeep
+
+# ── Python 
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+
+# ── Data folder 
+data/raw/
+
+# ── OS files 
+.DS_Store
+Thumbs.db
