@@ -137,10 +137,10 @@ Colab free tier disconnects after ~90 min of inactivity. Just re-run completed s
 
 
 
-### Part 2 — Deployment on Local
+### Part 2 - Deployment on Local
 After training on Colab, run the web app locally in VS Code. localhost:8000 works directly on your machine.
 
-#### Step 1 — Get the project folder to your local machine
+#### Step 1 - Get the project folder to your local machine
 
 Google Drive Desktop App
 
@@ -153,21 +153,21 @@ Google Drive Desktop App
 C:\path\to\Projects\agrovision
 ```
 
-#### Step 2 — Open project in VS Code/any local IDE
+#### Step 2 - Open project in VS Code/any local IDE
 
 ```bash
 cd C:\path\to\Projects\agrovision
 code .
 ```
 
-#### Step 3 — Create virtual environment
+#### Step 3 - Create virtual environment
 Open the VS Code terminal and run:
 
 ```bash
 python -m venv venv
 ```
 
-#### Step 4 — Activate virtual environment
+#### Step 4 - Activate virtual environment
 
 **Windows:**
 
@@ -192,7 +192,7 @@ pip install -r requirements_deploy.txt
 requirements_deploy.txt includes: fastapi, uvicorn, python-multipart, torch, timm, albumentations, opencv-python, pillow, numpy, pyyaml
 
 
-#### Step 8 - Launch the app
+#### Step 6 - Launch the app
 
 ```bash
 python run.py
