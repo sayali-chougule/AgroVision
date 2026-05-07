@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroVision — Crop Disease AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green-dark:  #1a3a1f;
+  --green-mid:   #2d6a35;
+  --green-light: #4caf50;
+  --green-pale:  #e8f5e9;
+  --amber-pale:  #fffbeb;
+  --red-pale:    #fef2f2;
+  --cream:       #faf9f6;
+  --paper:       #f5f3ee;
+  --ink:         #1c1917;
+  --ink-mid:     #44403c;
+  --ink-light:   #78716c;
+  --border:      #e7e5e0;
+  --white:       #ffffff;
+  --radius:      16px;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+header {
+  background: var(--green-dark);
+  padding: 0 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,.25);
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 36px; height: 36px; background: var(--green-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.logo-text { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: #fff; letter-spacing: -.02em; }
+.logo-text span { color: var(--green-light); }
+.status-pill { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 100px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-light); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+main { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+
+.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+.card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.card-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: var(--green-pale); }
+.card-title { font-size: 14px; font-weight: 600; }
+.card-body { padding: 1.5rem; }
+
+.upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2.5rem 1rem; text-align: center; cursor: pointer; transition: all .2s; background: var(--paper); position: relative; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--green-light); background: var(--green-pale); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 2.5rem; margin-bottom: .75rem; display: block; }
+.upload-label { font-size: 14px; font-weight: 500; color: var(--ink-mid); margin-bottom: .25rem; }
+.upload-hint { font-size: 12px; color: var(--ink-light); }
+
+.preview-wrap { display: none; margin-top: 1.25rem; border-radius: 10px; overflow: hidden; position: relative; aspect-ratio: 4/3; background: var(--paper); }
+.preview-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.preview-clear { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; border: none; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.preview-clear:hover { background: rgba(0,0,0,.8); }
+
+.btn-analyse { margin-top: 1.25rem; width: 100%; padding: 14px; background: var(--green-mid); color: #fff; border: none; border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s, transform .1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-analyse:hover:not(:disabled) { background: var(--green-dark); }
+.btn-analyse:active:not(:disabled) { transform: scale(.98); }
+.btn-analyse:disabled { opacity: .5; cursor: not-allowed; }
+
+.results-empty { padding: 3rem 1rem; text-align: center; color: var(--ink-light); font-size: 14px; }
+.results-empty .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+
+.top-result { display: flex; flex-direction: column; align-items: center; padding: 1.75rem; background: var(--green-pale); border: 1.5px solid #c8e6c9; border-radius: 12px; margin-bottom: 1.25rem; text-align: center; }
+.top-badge { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--green-mid); background: rgba(77,175,74,.15); padding: 3px 10px; border-radius: 100px; margin-bottom: .75rem; }
+.top-name { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--green-dark); margin-bottom: .5rem; line-height: 1.3; }
+.top-conf { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 500; color: var(--green-mid); }
+.top-conf-label { font-size: 12px; color: var(--ink-light); margin-top: 2px; }
+.top-meta { margin-top: .75rem; display: flex; gap: 10px; font-size: 12px; color: var(--ink-light); flex-wrap: wrap; justify-content: center; }
+
+.severity { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.severity.healthy { background: var(--green-pale); color: var(--green-mid); }
+.severity.warning { background: var(--amber-pale); color: #b45309; }
+.severity.danger  { background: var(--red-pale);   color: #b91c1c; }
+
+.other-title { font-size: 12px; font-weight: 600; color: var(--ink-light); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; }
+.pred-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.pred-row:last-child { border-bottom: none; }
+.pred-rank { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-light); width: 20px; text-align: center; flex-shrink: 0; }
+.pred-bar-wrap { flex: 1; }
+.pred-label { font-size: 12px; font-weight: 500; color: var(--ink-mid); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred-bar-bg { height: 5px; background: var(--paper); border-radius: 100px; overflow: hidden; }
+.pred-bar-fill { height: 100%; border-radius: 100px; background: var(--green-light); transition: width .6s cubic-bezier(.34,1.56,.64,1); width: 0; }
+.pred-pct { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--ink-mid); font-weight: 500; flex-shrink: 0; width: 44px; text-align: right; }
+
+.info-strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.info-tile { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 14px; }
+.info-tile-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.info-tile-num { font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500; color: var(--ink); line-height: 1; }
+.info-tile-label { font-size: 12px; color: var(--ink-light); margin-top: 3px; }
+
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; box-shadow: 0 12px 40px rgba(0,0,0,.13); transform: translateY(80px); opacity: 0; transition: all .3s cubic-bezier(.34,1.56,.64,1); z-index: 999; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { background: #ef4444; }
+
+@media (max-width: 720px) {
+  main { grid-template-columns: 1fr; }
+  .info-strip { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌿</div>
+    <span class="logo-text">Agro<span>Vision</span></span>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Connecting...</span>
+  </div>
+</header>
+
+<main>
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📤</div>
+      <div class="card-title">Upload Leaf Image</div>
+    </div>
+    <div class="card-body">
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*">
+        <span class="upload-icon">🍃</span>
+        <div class="upload-label">Drop image here or click to browse</div>
+        <div class="upload-hint">JPG · PNG · Max 10MB</div>
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <img id="previewImg" src="" alt="Preview">
+        <button class="preview-clear" id="clearBtn">✕</button>
+      </div>
+      <button class="btn-analyse" id="analyseBtn" disabled>
+        <span id="btnText">Select an image first</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">🔬</div>
+      <div class="card-title">Diagnosis Results</div>
+    </div>
+    <div class="card-body" id="resultsBody">
+      <div class="results-empty">
+        <div class="empty-icon">🌱</div>
+        <div>Upload a leaf photo to get<br>instant disease diagnosis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="info-strip">
+    <div class="info-tile">
+      <div class="info-tile-icon" style="background:#e8f5e9">🌿</div>
+      <div>
+        <div class="info-tile-num" id="numClasses">—</div>
+        <div class="info-tile-label">Disease classes</div>
+      </div>
+    </div>
+    <div class="info-tile">
+      <div class="info-tile-icon" style="background:#fff8e1">⚡</div>
+      <div>
+        <div class="info-tile-num" id="lastMs">—</div>
+        <div class="info-tile-label">Last inference time</div>
+      </div>
+    </div>
+    <div class="info-tile">
+      <div class="info-tile-icon" style="background:#fce4ec">🧠</div>
+      <div>
+        <div class="info-tile-num">EfficientNet</div>
+        <div class="info-tile-label">Backbone model</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const fileInput   = document.getElementById('fileInput');
+const dropZone    = document.getElementById('dropZone');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg  = document.getElementById('previewImg');
+const clearBtn    = document.getElementById('clearBtn');
+const analyseBtn  = document.getElementById('analyseBtn');
+const btnText     = document.getElementById('btnText');
+const spinner     = document.getElementById('spinner');
+const resultsBody = document.getElementById('resultsBody');
+const toast       = document.getElementById('toast');
+const numClasses  = document.getElementById('numClasses');
+const lastMs      = document.getElementById('lastMs');
+
+let selectedFile = null;
+
+// Health check
+async function checkHealth() {
+  try {
+    const d = await fetch('/health').then(r => r.json());
+    document.getElementById('statusDot').style.background = '#4caf50';
+    document.getElementById('statusText').textContent =
+      d.model_loaded ? `Model ready · ${d.device}` : 'Demo mode';
+    numClasses.textContent = d.num_classes;
+  } catch {
+    document.getElementById('statusDot').style.background = '#ef4444';
+    document.getElementById('statusText').textContent = 'API offline';
+  }
+}
+checkHealth();
+
+// File handling
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Please select an image file', 'error'); return;
+  }
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewWrap.style.display = 'block';
+    dropZone.style.display = 'none';
+    analyseBtn.disabled = false;
+    btnText.textContent = 'Analyse Disease';
+  };
+  reader.readAsDataURL(file);
+}
+
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',      e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+clearBtn.addEventListener('click', () => {
+  selectedFile = null; fileInput.value = '';
+  previewWrap.style.display = 'none';
+  dropZone.style.display = 'block';
+  analyseBtn.disabled = true;
+  btnText.textContent = 'Select an image first';
+  resultsBody.innerHTML = `<div class="results-empty"><div class="empty-icon">🌱</div><div>Upload a leaf photo to get<br>instant disease diagnosis</div></div>`;
+});
+
+// Analyse
+analyseBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  analyseBtn.disabled = true;
+  btnText.textContent = 'Analysing...';
+  spinner.style.display = 'block';
+  resultsBody.innerHTML = `<div class="results-empty"><div class="empty-icon">⚙️</div><div style="margin-top:.5rem">Running inference...</div></div>`;
+
+  try {
+    const form = new FormData();
+    form.append('file', selectedFile);
+    form.append('top_k', '5');
+    const res  = await fetch('/predict', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    renderResults(data);
+    lastMs.textContent = `${data.inference_ms}ms`;
+  } catch (err) {
+    showToast('Prediction failed: ' + err.message, 'error');
+    resultsBody.innerHTML = `<div class="results-empty"><div class="empty-icon">❌</div><div>${err.message}</div></div>`;
+  } finally {
+    analyseBtn.disabled = false;
+    btnText.textContent = 'Analyse Again';
+    spinner.style.display = 'none';
+  }
+});
+
+// Render
+function formatName(raw) {
+  return raw.replace(/_+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+function getSeverity(name) {
+  const n = name.toLowerCase();
+  if (n.includes('healthy')) return { cls: 'healthy', label: 'Healthy',  icon: '✅' };
+  if (n.includes('early') || n.includes('rust') || n.includes('spot'))
+    return { cls: 'warning', label: 'Moderate', icon: '⚠️' };
+  return { cls: 'danger', label: 'Severe', icon: '🚨' };
+}
+
+function renderResults(data) {
+  const [top, ...rest] = data.predictions;
+  const sev  = getSeverity(top.class_name);
+  const conf = (top.confidence * 100).toFixed(1);
+  const parts = top.class_name.split('__');
+  const crop  = formatName(parts[0]);
+  const disease = parts[1] ? formatName(parts[1]) : 'Healthy';
+
+  let html = `
+    <div class="top-result">
+      <div class="top-badge">${sev.icon} ${sev.label} Risk</div>
+      <div class="top-name">${crop} · ${disease}</div>
+      <div class="top-conf">${conf}%</div>
+      <div class="top-conf-label">confidence</div>
+      <div class="top-meta">
+        <span class="severity ${sev.cls}">${sev.label}</span>
+        <span>· ${data.mode === 'demo' ? 'Demo mode' : 'Live model'}</span>
+        <span>· ${data.inference_ms}ms</span>
+      </div>
+    </div>`;
+
+  if (rest.length) {
+    html += `<div class="other-title">Other possibilities</div>`;
+    rest.forEach((p, i) => {
+      const pct = (p.confidence * 100).toFixed(1);
+      html += `
+        <div class="pred-row">
+          <div class="pred-rank">${i + 2}</div>
+          <div class="pred-bar-wrap">
+            <div class="pred-label">${formatName(p.class_name)}</div>
+            <div class="pred-bar-bg">
+              <div class="pred-bar-fill" data-w="${pct}"></div>
+            </div>
+          </div>
+          <div class="pred-pct">${pct}%</div>
+        </div>`;
+    });
+  }
+
+  resultsBody.innerHTML = html;
+  setTimeout(() => {
+    document.querySelectorAll('.pred-bar-fill')
+      .forEach(b => b.style.width = b.dataset.w + '%');
+  }, 50);
+}
+
+function showToast(msg, type = '') {
+  toast.textContent = msg;
+  toast.className = `toast ${type}`;
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

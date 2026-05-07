@@ -1,0 +1,33 @@
+data:
+  raw_dir: "/content/drive/MyDrive/DSCI591_Group_2/Raw_Data/CCMT_Dataset"                      # put your dataset here
+  output_dir: "output"
+  processed_dir: "output/processed"
+  splits_dir: "output/splits"
+  checkpoints_dir: "output/checkpoints"
+  manifest: "output/manifest.csv"
+  manifest_clean: "output/manifest_clean.csv"
+  manifest_processed: "output/manifest_processed.csv"
+  class_map: "output/class_map.json"
+
+validation:
+  min_image_size: 64
+  valid_extensions: [".jpg", ".jpeg", ".png", ".JPG", ".PNG"]
+
+preprocessing:
+  image_size: 224
+
+split:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  random_seed: 42
+
+training:
+  model_name: "efficientnet_b3"
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  label_smoothing: 0.1
+  num_workers: 4
+  device: "auto"                           # auto detects cuda/mps/cpu
