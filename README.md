@@ -69,27 +69,27 @@ agrovision/
     └── checkpoints/
         └── best.pth             ← Trained model weights (saved here)              ←
 ```
-### Part 1 — Training on Google Colab
+### Part 1 - Training on Google Colab
 
 The entire training pipeline runs on Google Colab using the dataset stored on Google Drive.
 
-#### 1. Step 1 - Open Google Colab
+#### Step 1 - Open Google Colab
 
 Create New notebook
 
-#### Step 2 — Enable GPU
+#### Step 2 - Enable GPU
 
 ```
 Runtime → Change runtime type → Hardware accelerator → GPU (T4) → Save
 ```
 
-#### Step 3 — Mount Google Drive
+#### Step 3 - Mount Google Drive
 ``` bash
 from google.colab import drive
 drive.mount('/content/drive')
 ```
 
-#### Step 4 — Install dependencies
+#### Step 4 - Install dependencies
 ``` bash
 !pip install timm albumentations imagehash tqdm pandas opencv-python-headless -q
 ```
@@ -102,14 +102,20 @@ Either upload manually via the Files panel (left sidebar in Colab), or clone fro
 %cd agrovision
 ```
 
-#### Step 6 — Run the full pipeline 
+#### Step 6 — Install deployment dependencies 
+
+```bash
+pip install -r requirements.txt
+```
+
+#### Step 7 — Run the full pipeline 
 
 ```bash
 !python pipeline.py
 ```
 This runs all 6 stages in order automatically. All outputs are saved back to Google Drive.
 
-#### Step 7 — If Colab disconnects mid-training
+#### Step 8 - If Colab disconnects mid-training
 Colab free tier disconnects after ~90 min of inactivity. Just re-run — completed stages are automatically skipped thanks to checkpoint flags in logs/:
 
 ```bash
@@ -118,7 +124,7 @@ Colab free tier disconnects after ~90 min of inactivity. Just re-run — complet
 !python pipeline.py split
 ```
 
-#### Step 8 — Pipeline stages reference
+#### Step 9 — Pipeline stages reference
 
 | Stage | File | What it does | Output |
 |-------|------|-------------|--------|
@@ -167,6 +173,20 @@ python -m venv venv
 
 ```bash
 venv\Scripts\activate
+```
+
+**Mac/Linux:**
+
+```bash
+source venv/bin/activate
+```
+
+You should see (venv) appear in your terminal prompt.
+
+#### Step 5 — Install deployment dependencies
+
+```bash
+pip install -r requirements_deploy.txt
 ```
 
 
