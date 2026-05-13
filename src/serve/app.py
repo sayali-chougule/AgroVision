@@ -94,34 +94,66 @@ except Exception as e:
     print("Model download failed:", e)
 
 # ── Model loader ──────────────────────────────────────────────────────────────
+# def load_model():
+#     global model, class_map, num_classes, device
+
+#     if not CKPT_PATH.exists():
+#         log.warning(f"No checkpoint found at {CKPT_PATH} — running in demo mode")
+#         return False
+
+#     device = (
+#         "cuda" if torch.cuda.is_available() else
+#         "mps"  if torch.backends.mps.is_available() else
+#         "cpu"
+#     )
+#     log.info(f"Loading model on {device} ...")
+
+#     bundle      = torch.load(CKPT_PATH, map_location=device)
+#     class_map   = bundle["class_map"]
+#     num_classes = bundle["num_classes"]
+
+#     model = timm.create_model(
+#         bundle["model_name"],
+#         pretrained=False,
+#         num_classes=num_classes
+#     )
+#     model.load_state_dict(bundle["model_state"])
+#     model = model.to(device).eval()
+
+#     log.info(f"Model ready — {num_classes} classes on {device}")
+#     return True
+
+
 def load_model():
     global model, class_map, num_classes, device
-
+    
     if not CKPT_PATH.exists():
         log.warning(f"No checkpoint found at {CKPT_PATH} — running in demo mode")
         return False
+
+    size_mb = CKPT_PATH.stat().st_size / 1e6
+    log.info(f"Checkpoint size: {size_mb:.1f} MB")
 
     device = (
         "cuda" if torch.cuda.is_available() else
         "mps"  if torch.backends.mps.is_available() else
         "cpu"
     )
-    log.info(f"Loading model on {device} ...")
 
-    bundle      = torch.load(CKPT_PATH, map_location=device)
+    try:
+        bundle = torch.load(CKPT_PATH, map_location=device)
+    except Exception as e:
+        log.error(f"torch.load failed: {e}")
+        return False
+
     class_map   = bundle["class_map"]
     num_classes = bundle["num_classes"]
-
-    model = timm.create_model(
-        bundle["model_name"],
-        pretrained=False,
-        num_classes=num_classes
-    )
+    model = timm.create_model(bundle["model_name"], pretrained=False, num_classes=num_classes)
     model.load_state_dict(bundle["model_state"])
     model = model.to(device).eval()
-
     log.info(f"Model ready — {num_classes} classes on {device}")
     return True
+
 
 # ── Predict helper ────────────────────────────────────────────────────────────
 def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
@@ -169,14 +201,33 @@ def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
 
 @app.on_event("startup")
 async def startup():
-    if not CKPT_PATH.exists():
-        log.info("Downloading model checkpoint...")
+    CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Check if file exists AND is valid (>10MB)
+    needs_download = (
+        not CKPT_PATH.exists() or 
+        CKPT_PATH.stat().st_size < 10_000_000  # corrupt/HTML files are tiny
+    )
+    
+    if needs_download:
+        if CKPT_PATH.exists():
+            log.warning(f"Corrupt checkpoint ({CKPT_PATH.stat().st_size} bytes) — deleting and re-downloading")
+            CKPT_PATH.unlink()
+        
+        log.info("Downloading model checkpoint from Google Drive...")
         try:
-            CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
             gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False, fuzzy=True)
-            log.info(f"Downloaded: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
+            size = CKPT_PATH.stat().st_size
+            log.info(f"Downloaded: {size / 1e6:.1f} MB")
+            
+            if size < 10_000_000:
+                log.error(f"Download produced tiny file ({size} bytes) — Google Drive blocked the request")
+                CKPT_PATH.unlink()
+                return
         except Exception as e:
             log.error(f"Download failed: {e}")
+            return
+    
     load_model()
 
 @app.get("/", response_class=HTMLResponse)
