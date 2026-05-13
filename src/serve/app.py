@@ -19,6 +19,8 @@ from torch.cuda.amp import autocast
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from huggingface_hub import hf_hub_download
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # ── make src/ importable so stage_05 transforms are reusable ──────────────────
 ROOT = Path(__file__).resolve().parents[2]   # agrovision/
@@ -159,18 +161,55 @@ def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
     }
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup():
+# @app.on_event("startup")
+# async def startup():
+#     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+#     needs_download = (
+#         not CKPT_PATH.exists() or
+#         CKPT_PATH.stat().st_size < 10_000_000  # <10MB means corrupt/missing
+#     )
+
+#     if needs_download:
+#         if CKPT_PATH.exists():
+#             log.warning(f"Corrupt checkpoint ({CKPT_PATH.stat().st_size} bytes) — deleting")
+#             CKPT_PATH.unlink()
+
+#         log.info(f"Downloading checkpoint from Hugging Face: {HF_REPO_ID}/{HF_FILENAME}")
+#         try:
+#             hf_hub_download(
+#                 repo_id=HF_REPO_ID,
+#                 filename=HF_FILENAME,
+#                 local_dir=str(CKPT_PATH.parent)
+#             )
+#             size_mb = CKPT_PATH.stat().st_size / 1e6
+#             log.info(f"Download complete: {size_mb:.1f} MB")
+
+#             if CKPT_PATH.stat().st_size < 10_000_000:
+#                 log.error("Downloaded file is too small — something went wrong")
+#                 CKPT_PATH.unlink()
+#                 return
+
+#         except Exception as e:
+#             log.error(f"Hugging Face download failed: {e}")
+#             return
+
+#     load_model()
+
+
+executor = ThreadPoolExecutor(max_workers=1)
+
+def download_and_load():
     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     needs_download = (
         not CKPT_PATH.exists() or
-        CKPT_PATH.stat().st_size < 10_000_000  # <10MB means corrupt/missing
+        CKPT_PATH.stat().st_size < 10_000_000
     )
 
     if needs_download:
         if CKPT_PATH.exists():
-            log.warning(f"Corrupt checkpoint ({CKPT_PATH.stat().st_size} bytes) — deleting")
+            log.warning("Corrupt checkpoint — deleting")
             CKPT_PATH.unlink()
 
         log.info(f"Downloading checkpoint from Hugging Face: {HF_REPO_ID}/{HF_FILENAME}")
@@ -180,19 +219,18 @@ async def startup():
                 filename=HF_FILENAME,
                 local_dir=str(CKPT_PATH.parent)
             )
-            size_mb = CKPT_PATH.stat().st_size / 1e6
-            log.info(f"Download complete: {size_mb:.1f} MB")
-
-            if CKPT_PATH.stat().st_size < 10_000_000:
-                log.error("Downloaded file is too small — something went wrong")
-                CKPT_PATH.unlink()
-                return
-
+            log.info(f"Download complete: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
         except Exception as e:
             log.error(f"Hugging Face download failed: {e}")
             return
 
     load_model()
+
+
+@app.on_event("startup")
+async def startup():
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(executor, download_and_load)
 
 
 @app.get("/", response_class=HTMLResponse)
