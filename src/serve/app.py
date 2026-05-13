@@ -239,7 +239,7 @@ from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=1)
 
 # Direct download URL from Hugging Face
-HF_DOWNLOAD_URL = "https://huggingface.co/sayali-2269/AgroVision/resolve/main/best.pth"
+HF_DOWNLOAD_URL = "HF_DOWNLOAD_URL = "https://huggingface.co/sayali-2269/AgroVision/resolve/main/best.pth?download=true"
 
 def download_and_load():
     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -257,12 +257,27 @@ def download_and_load():
         log.info(f"Downloading checkpoint from: {HF_DOWNLOAD_URL}")
         try:
             import requests
-            response = requests.get(HF_DOWNLOAD_URL, stream=True, timeout=300)
+            response = requests.get(
+                HF_DOWNLOAD_URL, 
+                stream=True, 
+                timeout=300,
+                allow_redirects=True,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
             response.raise_for_status()
             with open(CKPT_PATH, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-            log.info(f"Download complete: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
+            
+            size_mb = CKPT_PATH.stat().st_size / 1e6
+            log.info(f"Download complete: {size_mb:.1f} MB")
+            
+            # catch HTML error pages
+            if CKPT_PATH.stat().st_size < 10_000_000:
+                log.error(f"File too small ({size_mb:.1f} MB) — likely an error page, deleting")
+                CKPT_PATH.unlink()
+                return
+
         except Exception as e:
             log.error(f"Download failed: {e}")
             return
