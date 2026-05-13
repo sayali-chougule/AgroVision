@@ -79,7 +79,7 @@ MOCK_CLASSES = {
 
 import gdown
 
-MODEL_URL = "https://drive.google.com/file/d/1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC/view?usp=sharing"
+MODEL_URL = "MODEL_URL = "https://drive.google.com/uc?id=1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC""
 
 CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
