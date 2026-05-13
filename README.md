@@ -98,7 +98,7 @@ drive.mount('/content/drive')
 Either upload manually via the Files panel (left sidebar in Colab), or clone from GitHub:
 
 ``` bash 
-!git clone https://github.com/yourname/agrovision.git
+!git clone https://github.com/sayali-chougule/agrovision.git
 %cd agrovision
 ```
 
