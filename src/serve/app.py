@@ -239,7 +239,7 @@ from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=1)
 
 # Direct download URL from Hugging Face
-HF_DOWNLOAD_URL = "HF_DOWNLOAD_URL = "https://huggingface.co/sayali-2269/AgroVision/resolve/main/best.pth?download=true"
+HF_DOWNLOAD_URL = "https://huggingface.co/sayali-2269/AgroVision/resolve/main/best.pth?download=true"
 
 def download_and_load():
     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
