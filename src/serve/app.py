@@ -77,6 +77,16 @@ MOCK_CLASSES = {
     "9": "Tomato__Late_Blight",
 }
 
+import gdown
+
+MODEL_URL = "https://drive.google.com/file/d/1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC/view?usp=sharing"
+
+CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+if not CKPT_PATH.exists():
+    print("Downloading model...")
+    gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False)
+
 # ── Model loader ──────────────────────────────────────────────────────────────
 def load_model():
     global model, class_map, num_classes, device
