@@ -79,13 +79,19 @@ MOCK_CLASSES = {
 
 import gdown
 
-MODEL_URL = "MODEL_URL = "https://drive.google.com/uc?id=1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC""
+MODEL_URL = "https://drive.google.com/uc?id=1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC"
 
 CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-if not CKPT_PATH.exists():
-    print("Downloading model...")
-    gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False)
+try:
+    if not CKPT_PATH.exists():
+        print("Downloading model...")
+        gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False)
+        print("Download completed")
+    else:
+        print("Checkpoint already exists")
+except Exception as e:
+    print("Model download failed:", e)
 
 # ── Model loader ──────────────────────────────────────────────────────────────
 def load_model():
