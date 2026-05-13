@@ -18,6 +18,7 @@ from fastapi.responses import HTMLResponse
 from torch.cuda.amp import autocast
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from huggingface_hub import hf_hub_download
 
 # ── make src/ importable so stage_05 transforms are reusable ──────────────────
 ROOT = Path(__file__).resolve().parents[2]   # agrovision/
@@ -48,7 +49,10 @@ TEMPLATES = ROOT / "templates"
 app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 
 # ── Globals ───────────────────────────────────────────────────────────────────
-CKPT_PATH = ROOT / "output" / "checkpoints" / "best.pth"
+CKPT_PATH  = ROOT / "output" / "checkpoints" / "best.pth"
+HF_REPO_ID = "sayali-2269/AgroVision"   # ← your Hugging Face repo
+HF_FILENAME = "best.pth"
+
 MEAN = [0.485, 0.456, 0.406]
 STD  = [0.229, 0.224, 0.225]
 
@@ -77,56 +81,10 @@ MOCK_CLASSES = {
     "9": "Tomato__Late_Blight",
 }
 
-# import gdown
-
-# MODEL_URL = "https://drive.google.com/uc?id=1GH6htk09rs1N5zIcpEwLiPoSMx6DnkuC"
-
-# CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-# try:
-#     if not CKPT_PATH.exists():
-#         print("Downloading model...")
-#         gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False, fuzzy=True)
-#         print("Download completed")
-#     else:
-#         print("Checkpoint already exists")
-# except Exception as e:
-#     print("Model download failed:", e)
-
 # ── Model loader ──────────────────────────────────────────────────────────────
-# def load_model():
-#     global model, class_map, num_classes, device
-
-#     if not CKPT_PATH.exists():
-#         log.warning(f"No checkpoint found at {CKPT_PATH} — running in demo mode")
-#         return False
-
-#     device = (
-#         "cuda" if torch.cuda.is_available() else
-#         "mps"  if torch.backends.mps.is_available() else
-#         "cpu"
-#     )
-#     log.info(f"Loading model on {device} ...")
-
-#     bundle      = torch.load(CKPT_PATH, map_location=device)
-#     class_map   = bundle["class_map"]
-#     num_classes = bundle["num_classes"]
-
-#     model = timm.create_model(
-#         bundle["model_name"],
-#         pretrained=False,
-#         num_classes=num_classes
-#     )
-#     model.load_state_dict(bundle["model_state"])
-#     model = model.to(device).eval()
-
-#     log.info(f"Model ready — {num_classes} classes on {device}")
-#     return True
-
-
 def load_model():
     global model, class_map, num_classes, device
-    
+
     if not CKPT_PATH.exists():
         log.warning(f"No checkpoint found at {CKPT_PATH} — running in demo mode")
         return False
@@ -139,6 +97,7 @@ def load_model():
         "mps"  if torch.backends.mps.is_available() else
         "cpu"
     )
+    log.info(f"Loading model on {device} ...")
 
     try:
         bundle = torch.load(CKPT_PATH, map_location=device)
@@ -148,12 +107,17 @@ def load_model():
 
     class_map   = bundle["class_map"]
     num_classes = bundle["num_classes"]
-    model = timm.create_model(bundle["model_name"], pretrained=False, num_classes=num_classes)
+
+    model = timm.create_model(
+        bundle["model_name"],
+        pretrained=False,
+        num_classes=num_classes
+    )
     model.load_state_dict(bundle["model_state"])
     model = model.to(device).eval()
+
     log.info(f"Model ready — {num_classes} classes on {device}")
     return True
-
 
 # ── Predict helper ────────────────────────────────────────────────────────────
 def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
@@ -195,44 +159,46 @@ def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
     }
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-# @app.on_event("startup")
-# async def startup():
-#     load_model()
-
 @app.on_event("startup")
 async def startup():
     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Check if file exists AND is valid (>10MB)
+
     needs_download = (
-        not CKPT_PATH.exists() or 
-        CKPT_PATH.stat().st_size < 10_000_000  # corrupt/HTML files are tiny
+        not CKPT_PATH.exists() or
+        CKPT_PATH.stat().st_size < 10_000_000  # <10MB means corrupt/missing
     )
-    
+
     if needs_download:
         if CKPT_PATH.exists():
-            log.warning(f"Corrupt checkpoint ({CKPT_PATH.stat().st_size} bytes) — deleting and re-downloading")
+            log.warning(f"Corrupt checkpoint ({CKPT_PATH.stat().st_size} bytes) — deleting")
             CKPT_PATH.unlink()
-        
-        log.info("Downloading model checkpoint from Google Drive...")
+
+        log.info(f"Downloading checkpoint from Hugging Face: {HF_REPO_ID}/{HF_FILENAME}")
         try:
-            gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False, fuzzy=True)
-            size = CKPT_PATH.stat().st_size
-            log.info(f"Downloaded: {size / 1e6:.1f} MB")
-            
-            if size < 10_000_000:
-                log.error(f"Download produced tiny file ({size} bytes) — Google Drive blocked the request")
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=HF_FILENAME,
+                local_dir=str(CKPT_PATH.parent)
+            )
+            size_mb = CKPT_PATH.stat().st_size / 1e6
+            log.info(f"Download complete: {size_mb:.1f} MB")
+
+            if CKPT_PATH.stat().st_size < 10_000_000:
+                log.error("Downloaded file is too small — something went wrong")
                 CKPT_PATH.unlink()
                 return
+
         except Exception as e:
-            log.error(f"Download failed: {e}")
+            log.error(f"Hugging Face download failed: {e}")
             return
-    
+
     load_model()
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return HTMLResponse(content=(TEMPLATES / "index.html").read_text())
+
 
 @app.get("/health")
 async def health():
@@ -244,10 +210,12 @@ async def health():
         "checkpoint":   str(CKPT_PATH)
     }
 
+
 @app.get("/classes")
 async def get_classes():
     cm = class_map or MOCK_CLASSES
     return {"classes": cm, "total": len(cm)}
+
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), top_k: int = 5):
@@ -261,12 +229,13 @@ async def predict(file: UploadFile = File(...), top_k: int = 5):
         raise HTTPException(400, "Could not read image file")
 
     try:
-        result           = run_inference(img, top_k=min(top_k, 10))
+        result             = run_inference(img, top_k=min(top_k, 10))
         result["filename"] = file.filename
         return result
     except Exception as e:
         log.error(f"Inference error: {e}")
         raise HTTPException(500, f"Prediction failed: {e}")
+
 
 @app.post("/predict/batch")
 async def predict_batch(files: list[UploadFile] = File(...)):
