@@ -163,8 +163,20 @@ def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
     }
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+# @app.on_event("startup")
+# async def startup():
+#     load_model()
+
 @app.on_event("startup")
 async def startup():
+    if not CKPT_PATH.exists():
+        log.info("Downloading model checkpoint...")
+        try:
+            CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False, fuzzy=True)
+            log.info(f"Downloaded: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
+        except Exception as e:
+            log.error(f"Download failed: {e}")
     load_model()
 
 @app.get("/", response_class=HTMLResponse)
