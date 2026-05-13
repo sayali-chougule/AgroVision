@@ -86,7 +86,7 @@ CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
 try:
     if not CKPT_PATH.exists():
         print("Downloading model...")
-        gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False)
+        gdown.download(MODEL_URL, str(CKPT_PATH), quiet=False, fuzzy=True)
         print("Download completed")
     else:
         print("Checkpoint already exists")
