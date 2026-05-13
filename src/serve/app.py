@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse
 from torch.cuda.amp import autocast
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from huggingface_hub import hf_hub_download
+# from huggingface_hub import hf_hub_download
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
@@ -197,7 +197,49 @@ def run_inference(img_array: np.ndarray, top_k: int = 5) -> dict:
 #     load_model()
 
 
+# executor = ThreadPoolExecutor(max_workers=1)
+
+# def download_and_load():
+#     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+#     needs_download = (
+#         not CKPT_PATH.exists() or
+#         CKPT_PATH.stat().st_size < 10_000_000
+#     )
+
+#     if needs_download:
+#         if CKPT_PATH.exists():
+#             log.warning("Corrupt checkpoint — deleting")
+#             CKPT_PATH.unlink()
+
+#         log.info(f"Downloading checkpoint from Hugging Face: {HF_REPO_ID}/{HF_FILENAME}")
+#         try:
+#             hf_hub_download(
+#                 repo_id=HF_REPO_ID,
+#                 filename=HF_FILENAME,
+#                 local_dir=str(CKPT_PATH.parent)
+#             )
+#             log.info(f"Download complete: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
+#         except Exception as e:
+#             log.error(f"Hugging Face download failed: {e}")
+#             return
+
+#     load_model()
+
+
+# @app.on_event("startup")
+# async def startup():
+#     loop = asyncio.get_event_loop()
+#     loop.run_in_executor(executor, download_and_load)
+
+
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 executor = ThreadPoolExecutor(max_workers=1)
+
+# Direct download URL from Hugging Face
+HF_DOWNLOAD_URL = "https://huggingface.co/sayali-2269/AgroVision/resolve/main/best.pth"
 
 def download_and_load():
     CKPT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -212,16 +254,17 @@ def download_and_load():
             log.warning("Corrupt checkpoint — deleting")
             CKPT_PATH.unlink()
 
-        log.info(f"Downloading checkpoint from Hugging Face: {HF_REPO_ID}/{HF_FILENAME}")
+        log.info(f"Downloading checkpoint from: {HF_DOWNLOAD_URL}")
         try:
-            hf_hub_download(
-                repo_id=HF_REPO_ID,
-                filename=HF_FILENAME,
-                local_dir=str(CKPT_PATH.parent)
-            )
+            import requests
+            response = requests.get(HF_DOWNLOAD_URL, stream=True, timeout=300)
+            response.raise_for_status()
+            with open(CKPT_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
             log.info(f"Download complete: {CKPT_PATH.stat().st_size / 1e6:.1f} MB")
         except Exception as e:
-            log.error(f"Hugging Face download failed: {e}")
+            log.error(f"Download failed: {e}")
             return
 
     load_model()
@@ -231,7 +274,6 @@ def download_and_load():
 async def startup():
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, download_and_load)
-
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
