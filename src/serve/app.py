@@ -50,7 +50,7 @@ app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 
 # ── Globals ───────────────────────────────────────────────────────────────────
 CKPT_PATH  = ROOT / "output" / "checkpoints" / "best.pth"
-HF_REPO_ID = "sayali-2269/AgroVision"   # ← your Hugging Face repo
+HF_REPO_ID = "sayali-2269/AgroVision"   # ← Hugging Face repo
 HF_FILENAME = "best.pth"
 
 MEAN = [0.485, 0.456, 0.406]
